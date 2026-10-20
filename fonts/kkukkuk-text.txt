@@ -1,0 +1,46 @@
+# ===================================================================
+# Kkukkuk (MemomentKkukkukk) subset text list
+# -------------------------------------------------------------------
+# Every character in this file is kept in public/fonts/kkukkuk-subset.woff2.
+# Keep comment lines ASCII-only: ASCII (U+0020-007E) is always included,
+# so ASCII comments add no extra glyphs.
+#
+# Rule: only FIXED text goes here (wordmark, page titles, section titles).
+#       Text with variable parts (nickname etc.) must use Pretendard.
+#       Tab labels use Pretendard (BASE.md rule).
+#
+# When you add a heading on a new screen:
+#   1. Add the heading text below (one line per heading).
+#   2. Put the original font at fonts/source/MemomentKkukkukk.ttf
+#   3. Run (Python + fonttools + brotli required):
+#      pip install fonttools brotli
+#      pyftsubset fonts/source/MemomentKkukkukk.ttf \
+#        --text-file=fonts/kkukkuk-text.txt \
+#        --unicodes=U+0020-007E \
+#        --flavor=woff2 \
+#        --output-file=public/fonts/kkukkuk-subset.woff2
+# ===================================================================
+
+# [brand] wordmark
+모아팝
+
+# [popup-search]
+어느 팝업에 가세요?
+실시간 제보 TOP3
+
+# [login] signup page title (login wordmark reuses [brand])
+모덕우 등록하기
+
+# [popup-detail] section title (popup name is Pretendard: variable text)
+판매 굿즈
+
+# [stock-grid] section title (number part comes from ASCII digits)
+실시간 재고 현황 · 개 품목
+
+# [stock-favorites] page title (count "N" is Pretendard: variable text)
+찜한 팝업
+
+# [my] page title + section titles (greeting has a nickname: Pretendard)
+마이페이지
+모덕우 칭호 안내
+내 최근 제보 내역

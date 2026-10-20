@@ -1,0 +1,95 @@
+/*
+ * 전역 스타일: Tailwind 레이어 + 글꼴 등록 + 페이지 바탕
+ * main.tsx 에서 한 번 불러온다.
+ */
+
+/*
+ * 본문 글꼴 Pretendard: npm 패키지의 가변 글꼴 + 동적 서브셋
+ * - 가변 글꼴: 굵기 400~800 을 파일 하나로 처리 (굵기별 CSS 를 다 불러오는 정적 버전보다 CSS 가 1/10)
+ * - 동적 서브셋: 화면에 쓰인 글자가 든 조각만 내려받음
+ */
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * 헤딩 글꼴 꾹꾹체: 고정 문구 글자만 남긴 서브셋 (약 40KB)
+ * 담긴 글자 목록과 재생성 방법은 fonts/kkukkuk-text.txt 참고
+ */
+@font-face {
+  font-family: 'Kkukkuk';
+  src: url('/fonts/kkukkuk-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+  }
+
+  /* type="search" 입력의 브라우저 기본 지우기 버튼 숨김 (SearchInput 이 자체 X 버튼을 씀) */
+  input[type='search']::-webkit-search-cancel-button,
+  input[type='search']::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+}
+
+@layer utilities {
+  /* 스켈레톤 반짝임: surface 면 위로 canvas 색 띠가 지나간다 */
+  .skeleton-shimmer {
+    background-image: linear-gradient(90deg, transparent 0%, #fffdf6 50%, transparent 100%);
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+
+  @keyframes skeleton-shimmer {
+    from { background-position: 150% 0; }
+    to { background-position: -50% 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-shimmer { animation: none; }
+  }
+
+  /*
+   * 갱신 하이라이트 update-flash (feedback.md, stock.md '카드 상태')
+   * 값이 바뀐 SKU 카드: 면이 brand-soft 로 번쩍였다가 흰 면으로 1.2초에 걸쳐 돌아온다.
+   * 상태 띠: 1.06배로 살짝 커졌다 0.3초 안에 복귀(원점은 아래, 사진 모서리 밖은 잘림).
+   * 사용처: src/pages/stock-grid/SkuCard.tsx
+   */
+  .update-flash {
+    animation: update-flash-card 1.2s ease-out;
+  }
+
+  .update-flash-band {
+    transform-origin: bottom center;
+    animation: update-flash-band 0.3s ease-out;
+  }
+
+  @keyframes update-flash-card {
+    from { background-color: #a5f1e9; }
+    to { background-color: #ffffff; }
+  }
+
+  @keyframes update-flash-band {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.06); }
+    100% { transform: scale(1); }
+  }
+
+  /* 움직임 줄이기: 크기 변화만 빼고 색 변화는 남긴다 (움직임이 아니라 '바뀌었다'는 신호라서) */
+  @media (prefers-reduced-motion: reduce) {
+    .update-flash-band { animation: none; }
+  }
+}
