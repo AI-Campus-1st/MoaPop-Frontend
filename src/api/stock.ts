@@ -3,28 +3,35 @@
  * 화면은 이 파일의 함수만 호출한다.
  * - getStockGrid: 팝업 + SKU(상태·제보 인원 수, 등록 순서) + 내가 제보한 SKU — 로그인 유저만(RLS)
  * - subscribeStock: Supabase Realtime 으로 이 팝업의 skus 변경을 구독. 끊기면 알리고, 다시 이어지면 놓친 변경을 다시 읽는다
- * 사용처: src/pages/stock-grid/useStockGrid.ts, src/api/reports.ts (toStockSkus — 제보 연결 전까지)
+ * 사용처: src/pages/stock-grid/useStockGrid.ts, src/api/reports.ts (toStockSku·내 제보 표시)
  */
 import { REALTIME_CHANNEL_STATES } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { getSession } from './auth';
-import { deriveSkuStates } from './mock/realtime';
 import { isPopupEnded, isPopupUpcoming } from './popups';
-import type { Popup, Sku, SkuStatus, StockGridResult, StockSku } from './types';
+import type { Popup, SkuStatus, StockGridResult, StockSku } from './types';
 
 /** 재고 화면이 쓰는 skus 칸 */
 const SKU_COLUMNS = 'id,popup_id,name,price,image_url,status,report_count';
 
-/**
- * [임시] 목업 제보(src/api/reports.ts)가 쓰는 변환. 제보 연결(연결 5번)에서 reports.ts 와 함께 삭제한다.
- * 목업 skus 행에 목업 제보로 계산한 상태·인원 수를 입힌다.
- */
-export function toStockSkus(skus: Sku[]): StockSku[] {
-  const states = deriveSkuStates(skus);
-  return skus.map((sku) => {
-    const state = states.get(sku.id);
-    return state ? { ...sku, status: state.status, reportCount: state.reportCount } : { ...sku, reportCount: 0 };
-  });
+/** 내 제보로 본 시간: 제보를 보낸 뒤 이 시간 안에 온 그 SKU 의 실시간 알림은 '내 제보'로 본다 */
+const MY_REPORT_WINDOW_MS = 10_000;
+/** 방금 내가 제보한 SKU → 보낸 시각. 실시간 알림은 누가 바꿨는지 알려 주지 않아서 이렇게 기억한다 */
+const myRecentReports = new Map<string, number>();
+
+/** 제보를 보내기 직전에 부른다(src/api/reports.ts submitReport) */
+export function markMyReport(skuId: string): void {
+  myRecentReports.set(skuId, Date.now());
+}
+
+/** 제보가 실패하면 표시를 지운다(그 뒤의 변경은 남의 것) */
+export function forgetMyReport(skuId: string): void {
+  myRecentReports.delete(skuId);
+}
+
+function isMyRecentReport(skuId: string): boolean {
+  const sentAt = myRecentReports.get(skuId);
+  return sentAt !== undefined && Date.now() - sentAt < MY_REPORT_WINDOW_MS;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -35,8 +42,8 @@ function isSkuStatus(value: unknown): value is SkuStatus {
   return value === 'available' || value === 'low' || value === 'soldout';
 }
 
-/** 서버 skus 행(조회 응답·실시간 알림의 새 값)을 화면 타입으로 바꾼다. 모양이 다르면 null */
-function toStockSku(row: unknown): StockSku | null {
+/** 서버 skus 행(조회 응답·실시간 알림의 새 값·제보 응답의 sku)을 화면 타입으로 바꾼다. 모양이 다르면 null */
+export function toStockSku(row: unknown): StockSku | null {
   if (!isRecord(row)) return null;
   const { id, popup_id, name, price, image_url, status, report_count } = row;
   if (typeof id !== 'string' || typeof popup_id !== 'string' || typeof name !== 'string' || !isSkuStatus(status)) {
@@ -140,7 +147,7 @@ export async function getStockGrid(popupId: string): Promise<StockGridResult> {
 export interface StockSubscriptionHandlers {
   /**
    * SKU 의 상태나 제보 인원 수가 바뀌었을 때. mine: 가장 최근 제보가 내 것인지.
-   * 실시간 알림은 누가 바꿨는지 알려 주지 않아 지금은 항상 false 다(제보 연결 단계에서 보완).
+   * 실시간 알림은 누가 바꿨는지 알려 주지 않아, 방금(10초 안에) 내가 제보한 SKU 면 내 것으로 본다.
    */
   onSkuChange: (sku: StockSku, info: { mine: boolean }) => void;
   /** 실시간 연결이 끊기거나 다시 이어졌을 때 */
@@ -171,7 +178,7 @@ export function subscribeStock(popupId: string, baseline: StockSku[], handlers: 
     const previous = snapshot.get(sku.id);
     if (previous && previous.status === sku.status && previous.reportCount === sku.reportCount) return;
     snapshot.set(sku.id, { status: sku.status, reportCount: sku.reportCount });
-    handlers.onSkuChange(sku, { mine: false });
+    handlers.onSkuChange(sku, { mine: isMyRecentReport(sku.id) });
   };
 
   /** 놓친 변경을 메우려고 SKU 를 다시 읽어 비교한다. 실패하면 다음 연결 때 다시 한다 */

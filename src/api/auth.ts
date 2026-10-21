@@ -3,7 +3,7 @@
  * 화면과 src/lib/auth 는 이 파일의 함수만 호출한다. 함수 이름과 결과 모양은 목업 때와 같다.
  * 처리: Supabase Auth(이메일·비밀번호) + profiles 테이블(닉네임·포인트). 세션은 supabase-js 가 브라우저에 저장·갱신한다.
  * 근거: docs/logics/AUTH_PROFILE.md, API_spec.md AUTH-1~5
- * 사용처: src/lib/auth/AuthProvider.tsx, src/api/reports.ts (applyPointsMock — 제보 연결 전까지)
+ * 사용처: src/lib/auth/AuthProvider.tsx, src/api/reports.ts (refreshSession — 제보 후 포인트 갱신)
  */
 import type { Session as AuthSession } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
@@ -52,11 +52,15 @@ async function toSession(auth: AuthSession | null): Promise<Session | null> {
 
 type AuthListener = (session: Session | null) => void;
 
+/** 이 앱이 직접 알릴 때 쓰는 구독자 목록(제보 후 포인트 갱신 등 Supabase 가 알려 주지 않는 변화) */
+const localListeners = new Set<AuthListener>();
+
 /**
  * 로그인·로그아웃·토큰 갱신이 일어날 때마다 listener 를 부른다. 돌려준 함수를 부르면 구독 해제.
  * 다른 탭의 로그인·로그아웃도 supabase-js 가 알려 준다.
  */
 export function onAuthChange(listener: AuthListener): () => void {
+  localListeners.add(listener);
   // 프로필을 읽는 동안 다음 변화가 오면 늦게 끝난 이전 결과로 덮어쓰지 않도록 차례 번호를 매긴다
   let latest = 0;
   const { data } = supabase.auth.onAuthStateChange((_event, authSession) => {
@@ -72,7 +76,20 @@ export function onAuthChange(listener: AuthListener): () => void {
         });
     }, 0);
   });
-  return () => data.subscription.unsubscribe();
+  return () => {
+    localListeners.delete(listener);
+    data.subscription.unsubscribe();
+  };
+}
+
+/**
+ * 내 프로필(포인트 등)을 다시 읽어 구독자에게 알린다.
+ * 포인트는 서버(submit_report)가 바꾸는데 Supabase 로그인 알림은 오지 않으므로, 제보 성공 뒤 이걸 부른다.
+ * 사용처: src/api/reports.ts submitReport
+ */
+export async function refreshSession(): Promise<void> {
+  const session = await getSession();
+  localListeners.forEach((listener) => listener(session));
 }
 
 /* ------------------------------------------------------------------ */
@@ -135,15 +152,6 @@ export async function signUp({ email, password, nickname }: SignUpInput): Promis
   } catch {
     return { ok: false, code: 'unknown' };
   }
-}
-
-/**
- * [임시] 목업 제보(src/api/reports.ts)가 쓰던 포인트 적립 함수.
- * 실제 계정에서는 포인트를 서버(submit_report)만 바꾸므로 여기서는 아무것도 하지 않고 null 을 돌려준다.
- * 그래서 제보 연결 전까지 목업 제보는 unknown 으로 실패한다. 제보 연결(연결 5번)에서 reports.ts 와 함께 삭제한다.
- */
-export function applyPointsMock(_userId: string, _points: number): number | null {
-  return null;
 }
 
 /** 로그아웃. 서버 요청이 실패해도 이 기기의 로그인은 지운다 */
