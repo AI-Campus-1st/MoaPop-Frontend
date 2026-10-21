@@ -16,6 +16,9 @@
       "Edit"
     ],
     "deny": [
+      "Read(~/.moapop-secrets/**)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
       "Read(./.env)",
       "Read(./.env.*)"
     ]
