@@ -61,3 +61,5 @@ npm run build   # 배포용 빌드 (dist/에 생성)
 - 백엔드: MoaPop-Backend (Supabase 마이그레이션, 시드, RLS·RPC, 확인 스크립트)
 
 배포 주소: (고정 주소를 여기에)
+
+배포 주소: https://moapop-frontend.vercel.app/
