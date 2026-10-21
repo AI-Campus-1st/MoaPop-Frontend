@@ -1,0 +1,19 @@
+# =============================================================
+# MoaPop 프론트엔드 컨테이너 실행 설정
+# 실행: docker compose --env-file .env.local up --build   → http://localhost:8080
+# 백엔드·DB는 이 파일이 아니라 백엔드 저장소의 `supabase start`가 Docker로 띄운다(Docker Desktop의 backend 묶음).
+# 브라우저가 Supabase 주소(로컬이면 http://127.0.0.1:54321)로 직접 요청하므로 컨테이너끼리 연결할 필요는 없다.
+# =============================================================
+name: moapop-frontend
+
+services:
+  frontend:
+    build:
+      context: .
+      # Vite가 빌드 때 넣는 값. --env-file로 읽은 .env.local의 값을 넘긴다(파일 자체는 이미지에 넣지 않음)
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:?VITE_SUPABASE_URL이 비어 있습니다. --env-file .env.local을 붙여 실행하세요}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:?VITE_SUPABASE_ANON_KEY가 비어 있습니다. --env-file .env.local을 붙여 실행하세요}
+    ports:
+      - "8080:80"
+    restart: unless-stopped

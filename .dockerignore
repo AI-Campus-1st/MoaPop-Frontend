@@ -1,0 +1,8 @@
+# 이미지 빌드 때 복사하지 않는 것: 설치 폴더·빌드 결과·git 기록·키 파일·임시 파일
+node_modules
+dist
+.git
+.env
+.env.*
+*.log
+.DS_Store
