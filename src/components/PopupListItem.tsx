@@ -12,6 +12,7 @@ import { CaretRight, Storefront, Trash } from '@phosphor-icons/react';
 import type { ReactNode } from 'react';
 import type { Popup } from '../api/types';
 import { formatPeriod } from '../lib/format';
+import { useOfficialImage } from '../lib/useOfficialImage';
 import ImageFallback from './ImageFallback';
 import RankBadge from './RankBadge';
 
@@ -94,12 +95,14 @@ function DefaultItem({ popup, rank, reportCount, onSelect }: DefaultItemProps) {
 
 /** 찜 목록 항목: 평소에는 카드 전체가 링크, 편집 중에는 일반 카드 + 휴지통 버튼 */
 function FavoriteItem({ popup, to, ended, editing = false, onDelete }: FavoriteItemProps) {
+  // 썸네일: image_url → 공식 게시물 이미지 → 대체 아이콘 순(API_spec IMG-1)
+  const thumbnailSrc = useOfficialImage('popup', popup.id, popup.image_url);
   const body = (
     <>
       {/* 썸네일은 꾸밈이다. 팝업명이 바로 옆에 있어 스크린리더가 이름을 두 번 읽지 않게 숨긴다 */}
       <div aria-hidden className="shrink-0">
         <ImageFallback
-          src={popup.image_url}
+          src={thumbnailSrc}
           alt=""
           fallbackIcon={Storefront}
           fallbackIconSize={24}

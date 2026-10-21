@@ -28,9 +28,22 @@ export interface Sku {
   id: string;
   popup_id: string;
   name: string;
-  price: number;
+  /** 공개되지 않은 가격은 null (서버 skus.price 가 비어 있을 수 있음, SEED_DATA 규칙) */
+  price: number | null;
   image_url: string;
   status: SkuStatus;
+}
+
+/**
+ * 팝업 상세의 굿즈 미리보기 (서버 sku_previews view). 재고 상태가 일부러 없다(비로그인 공개용, ERD 3번).
+ * 사용처: api/popups.ts getPopupDetail, pages/popup-detail/SkuPreviewList
+ */
+export interface SkuPreview {
+  id: string;
+  popup_id: string;
+  name: string;
+  price: number | null;
+  image_url: string;
 }
 
 /**
@@ -109,10 +122,10 @@ export interface Favorite {
   created_at: string;
 }
 
-/** 팝업 상세 화면에 필요한 데이터: 팝업 정보 + 판매 굿즈 목록 */
+/** 팝업 상세 화면에 필요한 데이터: 팝업 정보 + 판매 굿즈 미리보기(재고 상태 없음) */
 export interface PopupDetail {
   popup: Popup;
-  skus: Sku[];
+  skus: SkuPreview[];
 }
 
 /** 찜 실패 원인: 비로그인 / 종료된 팝업(찜 불가) / 그 밖의 오류 */

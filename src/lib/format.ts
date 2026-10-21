@@ -16,8 +16,12 @@ export function formatPeriod(startDate: string, endDate: string): string {
   return `${formatShortDate(startDate)} ~ ${formatShortDate(endDate)}`;
 }
 
-/** 가격: 14000 → '14,000원' (stock.md 'sku-price') */
-export function formatPrice(price: number): string {
+/** 가격이 공개되지 않은 굿즈에 보여 줄 문구 (2026-10-20 결정) */
+const PRICE_UNKNOWN_TEXT = '가격 정보 없음';
+
+/** 가격: 14000 → '14,000원' (stock.md 'sku-price'). 가격이 없으면(null) '가격 정보 없음' */
+export function formatPrice(price: number | null): string {
+  if (price === null) return PRICE_UNKNOWN_TEXT;
   return `${price.toLocaleString('ko-KR')}원`;
 }
 

@@ -25,6 +25,7 @@ import ButtonPrimary from '../../components/ButtonPrimary';
 import EmptyState from '../../components/EmptyState';
 import HeaderIconButton from '../../components/HeaderIconButton';
 import ImageFallback from '../../components/ImageFallback';
+import { useOfficialImage } from '../../lib/useOfficialImage';
 import OverlayIconButton from '../../components/OverlayIconButton';
 import Toast from '../../components/Toast';
 import PopupDetailSkeleton from './PopupDetailSkeleton';
@@ -81,6 +82,8 @@ export default function PopupDetailPage() {
 
   const popup = detailState.status === 'done' ? detailState.detail.popup : null;
   const ended = popup ? isPopupEnded(popup) : false;
+  // 대표 이미지: image_url → 공식 게시물 이미지 → 대체 아이콘 순. Hook 이라 아래 조기 반환보다 먼저 부른다
+  const heroSrc = useOfficialImage('popup', popup?.id ?? null, popup?.image_url ?? '');
   const stockPath = `/stock/${popupId}`;
 
   /** 하단 버튼의 찜 저장 → 성공하면 재고 확인으로 이동(push), 실패하면 토스트 */
@@ -198,7 +201,7 @@ export default function PopupDetailPage() {
         <div className="relative">
           {popup ? (
             <ImageFallback
-              src={popup.image_url}
+              src={heroSrc}
               alt={`${popup.name} 대표 이미지`}
               fallbackIcon={Storefront}
               fallbackIconSize={48}
