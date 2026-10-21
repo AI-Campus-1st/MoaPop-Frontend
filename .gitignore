@@ -7,3 +7,5 @@ dist/
 .DS_Store
 fonts/source/
 *.log
+.vercel
+.env*
