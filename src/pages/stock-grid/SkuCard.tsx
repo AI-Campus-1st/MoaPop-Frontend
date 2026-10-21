@@ -14,6 +14,7 @@ import type { SkuStatus, StockSku } from '../../api/types';
 import ImageFallback from '../../components/ImageFallback';
 import { formatPrice } from '../../lib/format';
 import { SKU_STATUS_STYLE } from '../../lib/skuStatus';
+import { useOfficialImage } from '../../lib/useOfficialImage';
 
 /** 사진 하단 상태 띠: 불투명 채움 + 아이콘 + 라벨 */
 function StatusBand({ status, flashing }: { status: SkuStatus; flashing: boolean }) {
@@ -65,6 +66,8 @@ interface SkuCardProps {
 
 export default function SkuCard({ sku, footer, flashKey = 0 }: SkuCardProps) {
   const soldout = sku.status === 'soldout';
+  // 굿즈 사진: image_url → 공식 게시물 이미지 → 대체 아이콘 순(API_spec IMG-1)
+  const imageSrc = useOfficialImage('sku', sku.id, sku.image_url);
   const textColor = soldout ? 'text-disabled-text' : 'text-ink';
   const [flashing, stopFlash] = useFlash(flashKey);
 
@@ -81,7 +84,7 @@ export default function SkuCard({ sku, footer, flashKey = 0 }: SkuCardProps) {
         {/* 사진은 굿즈명과 겹치므로 스크린리더에서 숨긴다. 상태 띠는 읽힌다 */}
         <div className="h-full w-full" aria-hidden>
           <ImageFallback
-            src={sku.image_url}
+            src={imageSrc}
             alt={sku.name}
             fallbackIcon={Package}
             fallbackIconSize={32}
